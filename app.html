@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>낚시 기록 관리자</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <meta name="description" content="간단한 낚시 기록 관리자, IndexedDB에 저장하고 차트로 확인합니다." />
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="mb-8 flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold mb-2">분당조사 조과 관리</h1>
+        <p class="text-slate-400" id="user-info"></p>
+      </div>
+      <button id="logout-btn" class="rounded-full bg-slate-700 px-4 py-2 text-slate-200 transition hover:bg-slate-600">로그아웃</button>
+    </header>
+
+    <section class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+      <article class="space-y-4">
+        <div class="bg-slate-800 rounded-xl p-5 shadow-lg shadow-slate-950/20">
+          <h2 class="text-xl font-semibold mb-4">새 기록 추가</h2>
+          <form id="catch-form" class="space-y-4">
+            <div class="grid gap-4 sm:grid-cols-3">
+              <label class="block">
+                <span class="text-slate-200">날짜</span>
+                <input type="date" id="date" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none" required />
+              </label>
+              <label class="block">
+                <span class="text-slate-200">항구</span>
+                <input type="text" id="port" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none" />
+              </label>
+              <label class="block">
+                <span class="text-slate-200">선단</span>
+                <input type="text" id="fleet" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none" />
+              </label>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-1">
+              <label class="block">
+                <span class="text-slate-200">동반출조자</span>
+                <input type="text" id="companions" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none" />
+              </label>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="block">
+                <span class="text-slate-200">출조 포인트</span>
+                <input type="text" id="point" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none" />
+              </label>
+              <label class="block">
+                <span class="text-slate-200">물때</span>
+                <div class="mt-1 flex gap-2">
+                  <input type="text" id="tide" placeholder="1물" class="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none" />
+                  <button type="button" id="fetch-tide" class="rounded-full bg-slate-700 px-4 py-2 text-slate-200 transition hover:bg-slate-600">조회</button>
+                </div>
+              </label>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="block">
+                <span class="text-slate-200">날씨</span>
+                <input type="text" id="weather" placeholder="맑음, 흐림, 비" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none" />
+              </label>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="block">
+                <span class="text-slate-200">어종 1</span>
+                <select id="species-1" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none">
+                  <option value="">선택</option>
+                  <option>광어</option>
+                  <option>우럭</option>
+                  <option>노래미</option>
+                  <option>참돔</option>
+                  <option>문어</option>
+                  <option>갑오징어</option>
+                  <option>쭈꾸미</option>
+                </select>
+              </label>
+              <label class="block">
+                <span class="text-slate-200">마릿수</span>
+                <input type="number" id="catch-count" min="1" step="1" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none" />
+              </label>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="block">
+                <span class="text-slate-200">어종 2</span>
+                <select id="species-2" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none">
+                  <option value="">선택</option>
+                  <option>광어</option>
+                  <option>우럭</option>
+                  <option>노래미</option>
+                  <option>참돔</option>
+                  <option>문어</option>
+                  <option>갑오징어</option>
+                  <option>쭈꾸미</option>
+                </select>
+              </label>
+              <label class="block">
+                <span class="text-slate-200">마릿수</span>
+                <input type="number" id="catch-count-2" min="1" step="1" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none" />
+              </label>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="block">
+                <span class="text-slate-200">어종 3</span>
+                <select id="species-3" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none">
+                  <option value="">선택</option>
+                  <option>광어</option>
+                  <option>우럭</option>
+                  <option>노래미</option>
+                  <option>참돔</option>
+                  <option>문어</option>
+                  <option>갑오징어</option>
+                  <option>쭈꾸미</option>
+                </select>
+              </label>
+              <label class="block">
+                <span class="text-slate-200">마릿수</span>
+                <input type="number" id="catch-count-3" min="1" step="1" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none" />
+              </label>
+            </div>
+            <label class="block">
+              <span class="text-slate-200">특이사항</span>
+              <textarea id="note" rows="3" placeholder="광어 80cm" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none"></textarea>
+            </label>
+            <div class="flex flex-wrap gap-3 justify-end">
+              <button type="submit" class="rounded-full bg-cyan-500 px-5 py-2 text-slate-950 font-semibold transition hover:bg-cyan-400">저장</button>
+            </div>
+          </form>
+        </div>
+      </article>
+
+      <aside class="space-y-6">
+        <div class="bg-slate-800 rounded-xl p-5 shadow-lg shadow-slate-950/20 overflow-x-auto">
+          <h2 class="text-xl font-semibold mb-4">기록 히스토리</h2>
+          <table class="min-w-full text-left text-sm text-slate-300">
+            <thead class="border-b border-slate-700 text-slate-400">
+              <tr>
+                <th class="py-2 px-3">날짜</th>
+                <th class="py-2 px-3">항구</th>
+                <th class="py-2 px-3">선단</th>
+                <th class="py-2 px-3">어종 (마릿수)</th>
+                <th class="py-2 px-3">특이사항</th>
+                <th class="py-2 px-3">삭제</th>
+              </tr>
+            </thead>
+            <tbody id="records-body" class="divide-y divide-slate-700"></tbody>
+          </table>
+        </div>
+      </aside>
+    </section>
+
+    <footer class="mt-8 text-slate-500 text-sm">
+      이 앱은 GitHub Pages로 호스팅 가능하며, 브라우저 IndexedDB에 데이터를 저장합니다.
+    </footer>
+  </div>
+
+  <script src="scripts/app.js"></script>
+</body>
+</html>
