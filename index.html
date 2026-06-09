@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>낚시 기록 관리자</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta name="description" content="간단한 낚시 기록 관리자, IndexedDB에 저장하고 차트로 확인합니다." />
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold mb-2">낚시 기록 관리자</h1>
+      <p class="text-slate-300">브라우저에 데이터를 저장하고 차트로 낚시 기록을 관리합니다.</p>
+    </header>
+
+    <section class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+      <article class="space-y-4">
+        <div class="bg-slate-800 rounded-xl p-5 shadow-lg shadow-slate-950/20">
+          <h2 class="text-xl font-semibold mb-4">새 기록 추가</h2>
+          <form id="catch-form" class="space-y-4">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="block">
+                <span class="text-slate-200">날짜</span>
+                <input type="date" id="date" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none" required />
+              </label>
+              <label class="block">
+                <span class="text-slate-200">어종</span>
+                <input type="text" id="species" placeholder="예: 넙치" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none" required />
+              </label>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="block">
+                <span class="text-slate-200">무게 (kg)</span>
+                <input type="number" id="weight" step="0.01" min="0" placeholder="1.25" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none" required />
+              </label>
+              <label class="block">
+                <span class="text-slate-200">길이 (cm)</span>
+                <input type="number" id="length" step="0.1" min="0" placeholder="45.0" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none" required />
+              </label>
+            </div>
+            <label class="block">
+              <span class="text-slate-200">장소</span>
+              <input type="text" id="location" placeholder="강, 바다 등" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none" required />
+            </label>
+            <label class="block">
+              <span class="text-slate-200">메모</span>
+              <textarea id="note" rows="3" placeholder="낚시 팁, 바람 방향 등" class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none"></textarea>
+            </label>
+            <div class="flex flex-wrap gap-3 justify-end">
+              <button type="submit" class="rounded-full bg-cyan-500 px-5 py-2 text-slate-950 font-semibold transition hover:bg-cyan-400">추가</button>
+              <button type="button" id="clear-all" class="rounded-full border border-slate-600 px-5 py-2 text-slate-200 transition hover:border-white">기록 모두 삭제</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="bg-slate-800 rounded-xl p-5 shadow-lg shadow-slate-950/20">
+          <h2 class="text-xl font-semibold mb-4">통계</h2>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="rounded-2xl bg-slate-900 p-4">
+              <p class="text-slate-400 text-sm">총 기록</p>
+              <p id="total-count" class="text-3xl font-bold mt-2">0</p>
+            </div>
+            <div class="rounded-2xl bg-slate-900 p-4">
+              <p class="text-slate-400 text-sm">총 무게 (kg)</p>
+              <p id="total-weight" class="text-3xl font-bold mt-2">0.00</p>
+            </div>
+            <div class="rounded-2xl bg-slate-900 p-4">
+              <p class="text-slate-400 text-sm">평균 길이 (cm)</p>
+              <p id="avg-length" class="text-3xl font-bold mt-2">0.0</p>
+            </div>
+            <div class="rounded-2xl bg-slate-900 p-4">
+              <p class="text-slate-400 text-sm">최근 기록</p>
+              <p id="latest-record" class="text-3xl font-bold mt-2">-</p>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <aside class="space-y-6">
+        <div class="bg-slate-800 rounded-xl p-5 shadow-lg shadow-slate-950/20">
+          <h2 class="text-xl font-semibold mb-4">무게 차트</h2>
+          <canvas id="weight-chart" class="w-full h-72"></canvas>
+        </div>
+
+        <div class="bg-slate-800 rounded-xl p-5 shadow-lg shadow-slate-950/20 overflow-x-auto">
+          <h2 class="text-xl font-semibold mb-4">기록 리스트</h2>
+          <table class="min-w-full text-left text-sm text-slate-300">
+            <thead class="border-b border-slate-700 text-slate-400">
+              <tr>
+                <th class="py-2 px-3">날짜</th>
+                <th class="py-2 px-3">어종</th>
+                <th class="py-2 px-3">무게</th>
+                <th class="py-2 px-3">길이</th>
+                <th class="py-2 px-3">장소</th>
+                <th class="py-2 px-3">삭제</th>
+              </tr>
+            </thead>
+            <tbody id="records-body" class="divide-y divide-slate-700"></tbody>
+          </table>
+        </div>
+      </aside>
+    </section>
+
+    <footer class="mt-8 text-slate-500 text-sm">
+      이 앱은 GitHub Pages로 호스팅 가능하며, 브라우저 IndexedDB에 데이터를 저장합니다.
+    </footer>
+  </div>
+
+  <script src="scripts/app.js"></script>
+</body>
+</html>
